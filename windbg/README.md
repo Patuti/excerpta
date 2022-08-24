@@ -32,8 +32,22 @@ Once both `mod_baseaddr_from_addr` and `prst` lambdas are defined, you can use i
         VA               : 0x7ffe1d5dcec1
 
 # Get processes with a loaded module matching 'mod_name'
-`dx @$find_proc_by_module_name = (mod_name) => (@$cursession.Processes.Where(p => p.Modules.Where(m => m.Name.Contains(mod_name)).Count() > 0));`
+First, let's define a function to check if a process object has a module named `mod_name` in the list of its loaded modules.
 
-Usage:
+However, we can't just query the process modules (`proc_obj.Modules`), we need to switch to the process context first, we can do that by executing `.process ADDR` but I'm going to use the `SwitchTo` method for the process object.
+
+Once we have the right context, we still need to ask WinDbg to reload user modules, we do that by running the command `.reload /user`.
+
+```
+dx @$cmd = Debugger.Utility.Control.ExecuteCommand
+dx @$proc_has_mod = (proc_obj, mod_name) => (proc_obj.SwitchTo(), @$cmd(".reload /user"), proc_obj.Modules.Where(m => m.Name.Contains(mod_name)).Count() > 0)
+```
+
+Then we can use our new function in our process filter function.
+```
+dx @$find_proc_by_module_name = (mod_name) => (@$cursession.Processes.Where(p => @$proc_has_mod(p, mod_name)));
+```
+
+And finally we can use it like this:
 
 `dx @$find_proc_by_module_name("vertdll")`
