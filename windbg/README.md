@@ -30,3 +30,10 @@ Once both `mod_baseaddr_from_addr` and `prst` lambdas are defined, you can use i
         Name             : ntdll!RtlUserThreadStart + 0x21
         RVA              : 0x4cec1
         VA               : 0x7ffe1d5dcec1
+
+# Get processes with a loaded module matching 'mod_name'
+`dx @$find_proc_by_module_name = (mod_name) => (@$cursession.Processes.Where(p => p.Modules.Where(m => m.Name.Contains(mod_name)).Count() > 0));`
+
+Usage:
+
+`dx @$find_proc_by_module_name("vertdll")`
